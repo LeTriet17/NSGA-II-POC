@@ -8,16 +8,17 @@ from chromosome import *
 # Get resource
 resource_path = "data/resource.csv"
 resource_data = pd.read_csv(resource_path)
-#TODO: create dataframe for multiteam
-
-#Disable
-# resource_data = resource_data.loc[resource_data['bdpocdiscipline'] == 'E&I']
-# resource_data = resource_data.reset_index(drop = True)
-# # resource_data = resource_data.loc[resource_data['bdpocdiscipline'] == 'RES']
-# # resource_data = resource_data.loc[resource_data['bdpocdiscipline'] == 'PROD']
-# # resource_data = resource_data.loc[resource_data['bdpocdiscipline'] == 'MECH']
 
 date_unique = np.unique(resource_data.date.to_list()).astype(list)
+# Preprocessing WONUM_data
+data_path = "data/data.csv"
+data = pd.read_csv(data_path)
+
+data = data.drop('Unnamed: 0', axis=1)
+data = data[data.site != 'Not Defined']
+data = data.dropna().reset_index(drop=True)
+dict_wonum = {x: y for x, y in zip(data.wonum, data.index)}
+
 '''-------non-dominated sorting function-------'''
 
 def non_dominated_sorting(population_size, chroms_obj_record):
@@ -68,7 +69,6 @@ def non_dominated_sorting(population_size, chroms_obj_record):
 def calculate_crowding_distance(front, chroms_obj_record):
     distance = {m: 0 for m in front}
     #o is objective function's values, i.e: HC_time, HC_resourec. chromosome_obj_record={chromosome:[HC_time,HC_record]}
-    #TODO: change nextline in range(n), n is number of objective function
     for o in range(2):
         obj = {m: chroms_obj_record[m][o] for m in front}
         sorted_keys = sorted(obj, key=obj.get)
@@ -115,7 +115,7 @@ def get_resource(team, date, site):
 
 
 def _cal_end_date(date_begin, shift, est_dur,num_people):
-    #TODO: calculate end date for n people instead of 1
+    est_dur = est_dur* num_people
     after_shift = shift == 1 or int(est_dur) != est_dur
     if shift == 1 and int(est_dur) != est_dur:
         after_shift = 0
@@ -125,16 +125,6 @@ def _cal_end_date(date_begin, shift, est_dur,num_people):
     return dt_end, after_shift
 
 
-# Preprocessing WONUM_data
-data_path = "data.csv"
-data = pd.read_csv(data_path)
-
-data = data.drop('Unnamed: 0', axis=1)
-data = data[data.site != 'Not Defined']
-#Disable for multiteam purpose
-# data = data.loc[data['bdpocdiscipline'] == 'E&I']
-data = data.dropna().reset_index(drop=True)
-dict_wonum = {x: y for x, y in zip(data.wonum, data.index)}
 
 
 # Create population function
@@ -148,7 +138,6 @@ def createPop(sol_per_pop):
 
 
 # helper function for fitness function
-#TODO: fix function because chromosome structure has been changed
 def decode_datetime(bit):
     date = int(bit[:5], 2)
     month = int(bit[5:-2], 2)
@@ -172,28 +161,27 @@ def convert_datetime_to_string(dt):
     return dt.strftime("%d/%m/%Y")[:-1] + dt.strftime("%d/%m/%Y")[-1:]
 
 
-# def compute_violate_child():
 
-def manday_chromosome(chromosome, error_output=False):  # fitness function
-    #TODO: our score for valuation is stored in HC_time and HC_resource, fix this function for NSGA
+def fitness_value(chromosome, error_output=False):  # fitness function
+    #TODO: our score for valuation is stored in HC_time and HC_resource
     MANDAY = dict()
     HC_time = 0
     HC_resource = 0
-    # SC_score = 0
-    # violate_child = dict()
+
 
     for task in chromosome.chromosome:
 
         component = task.split(
-            '-')  # convert: H13807098-01/12/0001-09/03/0002-101100001101 to ['H13807098', '01/12/0001', '09/03/0002', '101100001101']
+            '-')
         # take component
         wonum = component[0]
         target_date_begin = component[1]
         end_date_begin = component[2]
-        bit_date = component[3]
+        bit_string = component[3]
         # shift = int(bit_date[1])
-        shift = int(bit_date[0])
-        date_begin = decode_datetime(bit_date[1:])
+        shift = int(bit_string[0])
+        date_begin = decode_datetime(bit_string[1:-2])
+        num_people=bit_string[-2:]
         # access from dataframe
         est_dur = access_row_by_wonum(wonum)['r_estdur']
         site = access_row_by_wonum(wonum)['site']
@@ -202,7 +190,7 @@ def manday_chromosome(chromosome, error_output=False):  # fitness function
         # convert to datetime type
         try:
             dt_begin = datetime.datetime.strptime(date_begin, '%d/%m/%Y')
-            dt_end, shift_end = _cal_end_date(date_begin, shift, est_dur)
+            dt_end, shift_end = _cal_end_date(date_begin, shift, est_dur,num_people)
             std_begin = datetime.datetime.strptime(target_date_begin, '%d/%m/%Y')  # start target_day datetime
             etd_end = datetime.datetime.strptime(end_date_begin, '%d/%m/%Y')  # end target_day datetime
             duration_start = (std_begin - dt_begin).days
@@ -266,7 +254,7 @@ def crossover(parents):
         parent_1 = mating_parents[0]
         parent_2 = mating_parents[1]
         swap_task_pos = random.randrange(parent_1.chromosome.shape[0])
-        crossover_point = random.sample(range(parent_1.chromosome[0].rfind('-') + 1, len(parent_1.chromosome[0]) - 4),
+        crossover_point = random.sample(range(parent_1.chromosome[0].rfind('-') + 1, len(parent_1.chromosome[0]) - 1),
                                         2)
         crossover_point.sort()
         offspring_1 = parent_1.chromosome[swap_task_pos][0:crossover_point[0]] + parent_2.chromosome[swap_task_pos][
@@ -305,7 +293,7 @@ def mutation(population, random_rate):
         for task in chromosome.chromosome:
             rate = random.uniform(0, 1)
             if rate < random_rate:
-                index = random.randrange(task.rfind('-') + 1, len(task) - 4)
+                index = random.randrange(task.rfind('-') + 1, len(task) - 1)
                 newGene, alternate = random.sample(geneSet, 2)
                 mutate_gene = alternate \
                     if newGene == task[index] \

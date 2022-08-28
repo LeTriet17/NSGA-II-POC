@@ -37,7 +37,8 @@ class CHROMOSOME:
         for wonum, tarsd, tared in zip(self.df.wonum, self.df.targstartdate, self.df.targcompdate):
             rand_date = _random_date(tarsd, tared, random.random())
             shift = random.choice([0, 1])
-            rand_date = ''.join([str(shift), rand_date])
-            chromosome = '-'.join([wonum, tarsd, tared, rand_date])
+            num_people = ''.join(np.random.choice(['0','1'],2))
+            bitstring = ''.join([str(shift), rand_date,num_people])
+            chromosome = '-'.join([wonum, tarsd, tared, bitstring])
             genes.append(chromosome)
         return np.asarray(genes)
