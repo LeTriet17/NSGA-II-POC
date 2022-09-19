@@ -5,6 +5,17 @@ import pandas as pd
 
 from chromosome import *
 
+#bit_dict_team 
+#======================MODIFY======================
+bit_dict_team = {
+    "000" : "MECH",
+    "001" : "PROD", 
+    "010" : "E&I",
+    "011" : "RES",
+    "100" : "RES"
+}
+#======================MODIFY======================
+
 # Get resource
 resource_path = "data/resource.csv"
 resource_data = pd.read_csv(resource_path)
@@ -26,6 +37,7 @@ def non_dominated_sorting(population_size, chroms_obj_record):
     front, rank = {}, {}
     front[0] = []
     for p in range(population_size * 2):
+        print(chroms_obj_record[p])
         s[p] = []
         n[p] = 0
         for q in range(population_size * 2):
@@ -180,13 +192,24 @@ def fitness_value(chromosome, error_output=False):  # fitness function
         bit_string = component[3]
         # shift = int(bit_date[1])
         shift = int(bit_string[0])
-        date_begin = decode_datetime(bit_string[1:-2])
-        num_people=bit_string[-2:]
+        date_begin = decode_datetime(bit_string[1:-5])
+        num_people = bit_string[-5:-3]
+        #===================MODIFY==================
+        team_bit = bit_string[-3:]
+        team = bit_dict_team[team_bit]
+        #===================MODIFY==================
         # access from dataframe
         est_dur = access_row_by_wonum(wonum)['r_estdur']
         site = access_row_by_wonum(wonum)['site']
-        team = access_row_by_wonum(wonum)['bdpocdiscipline']
-
+        #resouce modify
+        #==================MODIFY===================
+        # team = access_row_by_wonum(wonum)['bdpocdiscipline']
+        # try:
+        #     teamA,teamB = team.split(',') 
+        # except:
+        #     print("Not reconstruction data")
+        #     teamA,teamB = team, 'PROC' 
+        #==================MODIFY===================
         # convert to datetime type
         try:
             dt_begin = datetime.datetime.strptime(date_begin, '%d/%m/%Y')
@@ -202,7 +225,7 @@ def fitness_value(chromosome, error_output=False):  # fitness function
                 if error_output:
                     chromosome.HC_time.append(wonum)
                 continue
-
+            
             tup = (team, convert_datetime_to_string(dt_begin), shift, site)
 
             MANDAY[tup] = MANDAY.get(tup, 0) + 1
@@ -223,8 +246,9 @@ def fitness_value(chromosome, error_output=False):  # fitness function
         team, date, shift, site = key
         date = date[:len(date) - 1] + '000' + date[-1]
         data_resource_value = get_resource(team, date, site)
+        print("=========here=========")
         if data_resource_value == -1 or data_resource_value < value:
-
+            print("=========cache=========")
             if date not in chromosome.HC_resource:  # gen date with date not in resource
                 HC_resource += 1
             if error_output:
@@ -239,6 +263,7 @@ def fitness_value(chromosome, error_output=False):  # fitness function
 
 def select_mating_pool(pop, num_parents_mating):
     # shuffling the pop then select top of pops
+    pop = np.asarray(pop)
     index = np.random.choice(pop.shape[0], num_parents_mating, replace=False)
     random_individual = pop[index]
     pop = np.delete(pop, index)  # split current pop into remain_pop and mating_pool
@@ -290,7 +315,11 @@ def mutation(population, random_rate):
     # Mutation changes a number of genes as defined by the num_mutations argument. The changes are random.
     for chromosome in pop:
         mutate_flag = 0
-        for task in chromosome.chromosome:
+        for index,task in enumerate(chromosome.chromosome):
+            #==================MODIFY========================
+            if index >= len(chromosome.chromosome) - 3:
+                continue
+            #==================MODIFY========================
             rate = random.uniform(0, 1)
             if rate < random_rate:
                 index = random.randrange(task.rfind('-') + 1, len(task) - 1)

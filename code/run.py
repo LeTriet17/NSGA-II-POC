@@ -11,7 +11,7 @@ start_time = time.time()
 # Enter input
 population_size = int(input('Please input the size of population: ') or 20)
 num_crossover = int(input('Please input the size of Crossover: ') or population_size / 2)
-mutation_rate = float(input('Please input the size of Mutation Rate: ') or 0.3)
+mutation_rate = float(input('Please input the rate of Mutation Rate: ') or 0.3)
 num_iteration = int(input('Please input number of iteration: ') or 1)
 
 '''==================== main code ==============================='''
@@ -48,7 +48,7 @@ for n in range(num_iteration):
         now_best_front = ga.non_dominated_sorting(population_size, total_obj)
         best_list, best_pop = ga.selection(population_size, now_best_front, total_obj, total_list)
         best_obj = [total_obj[k] for k in best_pop]
-'''----------result----------'''
-print('best list', best_list)
-print('best obj', best_obj)
-print('the elapsed time:%s' % (time.time() - start_time))
+    '''----------result----------'''
+    print('best list', best_list)
+    print('best obj', best_obj)
+    print('the elapsed time:%s' % (time.time() - start_time))
