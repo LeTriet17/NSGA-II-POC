@@ -37,7 +37,6 @@ def non_dominated_sorting(population_size, chroms_obj_record):
     front, rank = {}, {}
     front[0] = []
     for p in range(population_size * 2):
-        print(chroms_obj_record[p])
         s[p] = []
         n[p] = 0
         for q in range(population_size * 2):
@@ -246,9 +245,7 @@ def fitness_value(chromosome, error_output=False):  # fitness function
         team, date, shift, site = key
         date = date[:len(date) - 1] + '000' + date[-1]
         data_resource_value = get_resource(team, date, site)
-        print("=========here=========")
         if data_resource_value == -1 or data_resource_value < value:
-            print("=========cache=========")
             if date not in chromosome.HC_resource:  # gen date with date not in resource
                 HC_resource += 1
             if error_output:
