@@ -48,32 +48,35 @@ for n in range(num_iteration):
         now_best_front = ga.non_dominated_sorting(population_size, total_obj)
         best_list, best_pop = ga.selection(population_size, now_best_front, total_obj, total_list)
         best_obj = [total_obj[k] for k in best_pop]
-'''----------result----------'''
+    '''----------result----------'''
+    print('best obj', best_obj)
 
-
-print('the elapsed time:%s' % (time.time() - start_time))
+    print('the elapsed time:%s' % (time.time() - start_time))
 team_dict_bit = {
-    "000":"MECH" ,
-     "001":"PROD",
-     "010":"E&I",
-    "011":"RES" ,
-     "100":"DECK"
+    "000": "MECH",
+    "001": "PROD",
+    "010": "E&I",
+    "011": "RES",
+    "100": "DECK"
 }
-best_result= best_list[0].chromosome
+best_result = best_list[0].chromosome
+res = []
 for chromosome_index in range(best_result.shape[0]):
     chromosome = best_result[chromosome_index]
     chromosome = str(chromosome).split('-')
     shift = chromosome[-1][0]
-    num_people = int(chromosome[-1][12:14],2)
+    num_people = int(chromosome[-1][12:14], 2) + 1
     team = team_dict_bit[chromosome[-1][-3:]]
     chromosome[-1] = ga.decode_datetime(chromosome[-1][1:12])
     chromosome.append(shift)
     chromosome.append(team)
     chromosome.append(str(num_people))
-    best_result[chromosome_index] = '-'.join(chromosome)
-df = pd.DataFrame(best_result)
+    chromosome = '-'.join(chromosome)
+    res.append(chromosome)
+
+df = pd.DataFrame(res)
 df = df[0].str.split('-', expand=True)
-df.columns = ['wonum', 'targstartdate', 'targcompdate', 'schedstartdate', 'shift','team','num_people']
+df.columns = ['wonum', 'targstartdate', 'targcompdate', 'schedstartdate', 'shift', 'team', 'num_people']
 from pathlib import Path
 
 filepath = Path('out.csv')
