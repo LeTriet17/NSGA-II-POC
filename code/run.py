@@ -20,7 +20,7 @@ best_list, best_obj = [], []
 population_list = ga.createPop(population_size)
 for n in range(num_iteration):
     parent_list = ga.select_mating_pool(population_list, num_crossover)
-    offspring_crossover_list = ga.crossover(parent_list)
+    offspring_crossover_list = ga.multi_crossover(parent_list)
     offspring_mutation_list = ga.mutation(population_list, mutation_rate)
     chroms_obj_record = {}  # record each chromosome objective values as chromosome_obj_record={chromosome:[HC_time,HC_record]}
 

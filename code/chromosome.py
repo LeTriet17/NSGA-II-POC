@@ -35,7 +35,7 @@ class CHROMOSOME:
         self.HC_time = []
         self.df = df
         self.chromosome = self._generate_parent()
-
+        
     # Generate random date
 
     def _generate_parent(self):
@@ -45,9 +45,12 @@ class CHROMOSOME:
             rand_date = _random_date(tarsd, tared, random.random())
             shift = random.choice([0, 1])
             team = team.split('|')
+            # team_p = team_dict_bit[team[0]] + team_dict_bit[team[1]]
+            
             team_gen = random.choice(team)
             team_gen = team_dict_bit[team_gen]
             num_people = ''.join(np.random.choice(['0', '1'], 2))
+            # print(shift,rand_date,num_people,team_gen)
             bitstring = ''.join([str(shift), rand_date, num_people, team_gen])
             chromosome = '-'.join([wonum, tarsd, tared, bitstring])
             genes.append(chromosome)

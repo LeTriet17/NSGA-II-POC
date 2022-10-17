@@ -1,6 +1,7 @@
 import datetime
 import copy
 import pandas as pd
+import random
 
 from chromosome import *
 
@@ -249,6 +250,78 @@ def select_mating_pool(pop, num_parents_mating):
     pop = np.delete(pop, index)  # split current pop into remain_pop and mating_pool
     return random_individual
 
+def find_point(test_str):
+    begin = test_str.rfind('-') + 1
+    shift = test_str[begin]
+    # rand_date = test_str[begin + 1: begin + 12]
+    # num_people = test_str[begin + 12 : begin + 14]
+    # team_gen = test_str[begin + 14 : begin + 17]
+    
+    crossover_rand_date = random.sample(range(begin + 1,begin + 12),2)
+    #crossover_num_people = random.sample(range(begin + 12,begin + 14),2)
+    crossover_rand_date.sort()
+    
+    return begin,crossover_rand_date
+
+def multi_crossover(parents):
+    mating_pool = copy.deepcopy(parents)
+    offsprings = []
+    while mating_pool.size > 0:
+        mating_idx = np.random.choice(mating_pool.shape[0], 2, replace=False)
+        mating_parents = mating_pool[mating_idx]
+        parent_1 = mating_parents[0]
+        parent_2 = mating_parents[1]
+        swap_task_pos = random.randrange(parent_1.chromosome.shape[0])
+        # print('parent_1: ',parent_1.chromosome[swap_task_pos])
+        begin,crossover_rand_date = find_point(parent_1.chromosome[0])
+        
+        parent_1_str = str(parent_1.chromosome[swap_task_pos])
+        parent_2_str = str(parent_2.chromosome[swap_task_pos])
+        
+        while True:
+            #hyperparameter track cross_over_shift
+            offspring_1 = parent_1_str[0:begin]
+            offspring_2 = parent_2_str[0:begin]
+            if random.random() > 0.5:
+                offspring_1 += parent_2_str[begin]
+                offspring_2 += parent_1_str[begin]
+            else:
+                offspring_1 += parent_1_str[begin]
+                offspring_2 += parent_2_str[begin]
+            #hyperparameter track cross_over_date
+            if random.random() > 0.3:
+                begin_bit_date,end_bit_date = crossover_rand_date
+                offspring_1 += parent_1_str[begin + 1: begin_bit_date] + parent_2_str[begin_bit_date:end_bit_date+1] + parent_1_str[end_bit_date+1:begin+12]
+                offspring_2 += parent_2_str[begin + 1: begin_bit_date] + parent_1_str[begin_bit_date:end_bit_date+1] + parent_2_str[end_bit_date+1:begin+12]
+            else:
+                offspring_1 += parent_1_str[begin+1:begin+12]
+                offspring_2 += parent_2_str[begin+1:begin+12]
+            #hyperparameter track num_people
+            if random.random() > 0.7:
+                offspring_1 += parent_2_str[begin+12:begin+14]
+                offspring_2 += parent_1_str[begin+12:begin+14]
+            else:
+                offspring_1 += parent_1_str[begin+12:begin+14]
+                offspring_2 += parent_2_str[begin+12:begin+14]
+            
+            #team keep stable
+            offspring_1 += parent_1_str[begin+14:]
+            offspring_2 += parent_2_str[begin+14:]
+            
+            if offspring_1 != parent_1_str and offspring_2 != parent_2:
+                parent_1.chromosome[swap_task_pos] = np.str_(offspring_1)
+                parent_2.chromosome[swap_task_pos] = np.str_(offspring_2)
+                break
+        parent_1.HC_time = []
+        parent_1.HC_resource = []
+        parent_2.HC_time = []
+        parent_2.HC_resource = []
+        offsprings.append(parent_1)
+        offsprings.append(parent_2)
+        mating_pool = np.delete(mating_pool, list(mating_idx), axis=0)
+
+    return np.array(offsprings)
+
 
 def crossover(parents):
     mating_pool = copy.deepcopy(parents)
@@ -259,9 +332,11 @@ def crossover(parents):
         parent_1 = mating_parents[0]
         parent_2 = mating_parents[1]
         swap_task_pos = random.randrange(parent_1.chromosome.shape[0])
+        print('parent_1: ',parent_1.chromosome[swap_task_pos])
         crossover_point = random.sample(range(parent_1.chromosome[0].rfind('-') + 1, len(parent_1.chromosome[0]) - 4),
                                         2)
         crossover_point.sort()
+        print(crossover_point)
         offspring_1 = parent_1.chromosome[swap_task_pos][0:crossover_point[0]] + parent_2.chromosome[swap_task_pos][
                                                                                  crossover_point[0]:crossover_point[
                                                                                      1]] + parent_1.chromosome[
@@ -298,16 +373,30 @@ def mutation(population, random_rate):
         for index, task in enumerate(chromosome.chromosome):
             # ==================MODIFY========================
             if index >= len(chromosome.chromosome) - 3:
+                #replace_team_here
                 continue
             # ==================MODIFY========================
             rate = random.uniform(0, 1)
             if rate < random_rate:
-                index = random.randrange(task.rfind('-') + 1, len(task) - 4)
+                index = random.randrange(task.rfind('-') + 1, len(task) - 3)
                 newGene, alternate = random.sample(geneSet, 2)
                 mutate_gene = alternate \
                     if newGene == task[index] \
                     else newGene
-                task = task[:index] + mutate_gene + task[index + 1:]
+                task_1 = task[:index] + mutate_gene + task[index + 1: -3]
+                #replace_team:
+                if random.random() < 0.05:
+                    wonum_task = task[:9]
+                    team = access_row_by_wonum(wonum_task)['alt_bdpocdiscipline'].split('|')
+                    team_0 = team_dict_bit[team[0]]
+                    team_1 = team_dict_bit[team[1]]
+                    if task[-3:] == team_0:
+                        task_1 += team_1
+                    else:
+                        task_1 += team_0
+                else:
+                    task_1 += task[-3:]
+                task = task_1
                 if mutate_flag == 0:
                     mutate_flag = 1
         if mutate_flag:
