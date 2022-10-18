@@ -49,6 +49,7 @@ for n in range(num_iteration):
         best_list, best_pop = ga.selection(population_size, now_best_front, total_obj, total_list)
         best_obj = [total_obj[k] for k in best_pop]
     '''----------result----------'''
+    print('loop', n)
     print('best obj', best_obj)
 
     print('the elapsed time:%s' % (time.time() - start_time))

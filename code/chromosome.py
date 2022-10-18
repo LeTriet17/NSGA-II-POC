@@ -19,7 +19,7 @@ def _str_time_prop(start, end, time_format, prop):
     return ptime
 
 
-def _random_date(start, end, prop):  # 0001 = current year, 0002 = next year
+def random_date(start, end, prop):  # 0001 = current year, 0002 = next year
     # generate date in current data
     sched_start = _str_time_prop(start, end, "%d/%m/%Y", prop)
     date_sched_start = format(int(sched_start[:2]), '05b')
@@ -42,7 +42,7 @@ class CHROMOSOME:
         genes = []
         for wonum, tarsd, tared, team in zip(self.df.wonum, self.df.targstartdate, self.df.targcompdate,
                                              self.df.alt_bdpocdiscipline):
-            rand_date = _random_date(tarsd, tared, random.random())
+            rand_date = random_date(tarsd, tared, random.random())
             shift = random.choice([0, 1])
             team = team.split('|')
             # team_p = team_dict_bit[team[0]] + team_dict_bit[team[1]]
